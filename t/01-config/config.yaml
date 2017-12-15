@@ -1,0 +1,5 @@
+appName: Test App
+someSection:
+  valueA: AAAA
+anotherSection:
+  value: BBB
