@@ -1,5 +1,7 @@
 appName: Test App
+param: \&main::dynParam
 someSection:
   valueA: AAAA
+  valueB: \&main::valueB
 anotherSection:
   value: BBB

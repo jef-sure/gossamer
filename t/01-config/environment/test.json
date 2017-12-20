@@ -1,1 +1,6 @@
-{"anotherSection":{"value":"JSON"}}
+{
+	"appName": "Test Env App",
+	"anotherSection": {
+		"value": "JSON"
+	}
+}

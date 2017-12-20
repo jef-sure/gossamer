@@ -4,20 +4,30 @@ use Test::Most;
 
 use Gossamer::Config;
 
+sub valueB {
+    "bBbB"
+}
+
+sub dynParam {
+    "dyn"
+}
+
 Gossamer::Config->init;
 ok(config,          "loaded config");
 ok(config->appName, "got appNme");
 is(config->appName, "Test App", "got right appNme");
 ok(config->someSection, "got someSection");
 is(config->someSection->valueA, "AAAA", "got someSection valueA");
+is(config->someSection->valueB, "bBbB", "got someSection valueB");
+is(config->param,               "dyn",  "got dynamic parameter");
 ok(config->anotherSection, "got anotherSection");
 is(config->anotherSection->value, "BBB", "got anotherSection value");
 
 Gossamer::Config->init("test");
 
-ok(config,          "loaded config");
+ok(config,          "loaded config with test environment");
 ok(config->appName, "got appNme");
-is(config->appName, "Test App", "got right appNme");
+is(config->appName, "Test Env App", "got right appNme");
 ok(config->someSection, "got someSection");
 is(config->someSection->valueA, "AAAA", "got someSection valueA");
 ok(config->anotherSection, "got anotherSection");
@@ -38,6 +48,5 @@ Gossamer::Config->init;
 
 ok(config->template, "got template section");
 is(config->template->path, "/var/www/public", "got template path");
-
 
 done_testing();

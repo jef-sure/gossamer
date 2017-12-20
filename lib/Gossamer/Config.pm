@@ -46,6 +46,7 @@ sub load_json {
 sub init {
     my ($class, $data) = @_;
     my $env_name = !ref $data ? $data : undef;
+    $config = {};
     if (not ref $data) {
         my @pdir = (
             File::Spec->rel2abs(File::Spec->catdir($FindBin::Bin, '..')),
@@ -64,6 +65,7 @@ sub init {
                 if (not grep {$libdir eq $_} @INC) {
                     unshift @INC, $libdir;
                 }
+                $config->{project_dir} = $pdir;
                 $data = $cfg =~ /\.ya?ml$/ ? load_yaml($cfg) : load_json($cfg);
                 if ($env_name) {
                     my $cyaml = File::Spec->rel2abs(File::Spec->catfile($pdir, 'environment', $env_name . '.yaml'));
@@ -84,7 +86,6 @@ sub init {
         croak "Unable to find project root dir" if not $found;
     }
     $data ||= {};
-    $config = {};
     bless $config, $class;
     for my $section (keys %$data) {
         no strict 'refs';
@@ -98,8 +99,14 @@ sub init {
             $config->{$section}->load_from_config($data->{$section});
             $config->register_config("Gossamer::Config::${mod}", $section);
         } else {
-            $config->{$section} = $data->{$section};
-            *{"Gossamer::Config::$section"} = subname "Gossamer::Config::$section" => sub {$config->{$section}};
+            if ($data->{$section} && $data->{$section} =~ /^\\&(.*)/) {
+                croak "$1 code is not loaded" if not *{$1}{CODE};
+                $config->{$section} = *{$1}{CODE};
+                *{"Gossamer::Config::$section"} = subname "Gossamer::Config::$section" => $config->{$section};
+            } else {
+                $config->{$section} = $data->{$section};
+                *{"Gossamer::Config::$section"} = subname "Gossamer::Config::$section" => sub {$config->{$section}};
+            }
         }
     }
     {
@@ -129,6 +136,7 @@ sub register_config {
 
 package Gossamer::Config::Base;
 use Sub::Name;
+use Carp;
 use strict;
 use warnings;
 
@@ -149,11 +157,11 @@ sub load_from_config {
         no warnings 'redefine';
         if (    $data->{$accessor}
             and not ref $data->{$accessor}
-            and $data->{$accessor} =~ /^&\w+::/
-            and *{$class . "::$accessor"}{CODE})
+            and $data->{$accessor} =~ /^\\&(.*)/)
         {
+            croak "$1 code is not loaded" if not *{$1}{CODE};
             *{$class . "::$accessor"}
-                = subname "${class}::$accessor" => *{$class . "::$accessor"}{CODE};
+                = subname "${class}::$accessor" => *{$1}{CODE};
         } else {
             *{$class . "::$accessor"} = subname "${class}::$accessor" => sub {$data->{$accessor}};
         }
@@ -161,3 +169,47 @@ sub load_from_config {
 }
 
 1;
+
+__END__
+=pod
+ 
+=encoding UTF-8
+ 
+=head1 NAME
+ 
+Gossamer::Config - Configure Gossamer to suit your needs
+ 
+=head1 VERSION
+ 
+version 0.01
+ 
+=head1 DESCRIPTION
+
+The Gossamer configuration handles reading the configuration
+of your Gossamer apps. 
+
+=head1 CONFIGURED VALUES
+
+All configured values considered read only. You can configure dynamic values
+supplying symbolic code references as values. 
+
+For every config section you can define default modules with default values.
+
+=head2 Configuration file path and file names
+
+Config initialization tries to determine project root directory automatically.
+Your configuration file  
+
+
+=head1 AUTHOR
+ 
+Anton Petrusevich
+ 
+=head1 COPYRIGHT AND LICENSE
+ 
+This software is copyright (c) 2017 by Anton Petrusevich.
+ 
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+ 
+=cut
