@@ -5,3 +5,7 @@ someSection:
   valueB: \&main::valueB
 anotherSection:
   value: BBB
+request:
+  hooks:
+    before: \&main::sub_hooks
+    after: \&main::sub_hooks
